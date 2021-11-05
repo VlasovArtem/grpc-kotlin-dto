@@ -13,9 +13,24 @@ The generator creates two additional extensions functions *toDto* and *toGrpc*
 
 Some code taken from - https://github.com/grpc/grpc-kotlin. Remove as soon as possible.
 
+* Table of content
+:PROPERTIES:
+:ID:       2ac28a13-5dc5-41fc-98f1-00810db7cd9d
+:END:
+
+1. [[How to use]]
+2. [[Options]]
+3. [[Examples]] 
+   1. [[Primitives]]
+   2. [[Enum]]    
+   3. [[One Of]]
+   4. [[Optional]]
+   5. [[Repeated]]
+   6. [[Special scenarios]]
+
 * How to use
 
-```
+#+BEGIN_SRC gradle
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${rootProject.ext["protobufVersion"]}"
@@ -44,14 +59,13 @@ protobuf {
         }
     }
 }
-```
+#+END_SRC
 
 * Options
 
 Current implementation has the next options:
 1. *dto_suffix* - DTO class suffix. Default - *Dto* (example: *dto_suffix=DTO*)
 2. *dto_package_suffix* - DTO class package suffix. New package suffix adds to default package for proto objects. Default - *dto* (example: *dto_package_suffix=test.example*)
-
 
 * Examples
 ** Primitives
@@ -568,3 +582,5 @@ fun TestSpecialDto.toGrpc(): TestSpecial =
     }
     .build()
 #+END_SRC
+
+
