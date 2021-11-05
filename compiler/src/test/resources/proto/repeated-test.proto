@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.repeated";
+
+package test.repeated;
+
+message RepeatedObject {
+  bool test = 1;
+}
+
+message TestRepeated {
+  repeated RepeatedObject objects = 1;
+  repeated string strings = 2;
+  repeated int32 ints = 3;
+}

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.oneof";
+
+package test.oneof;
+
+enum OneOfEnum {
+  ONE_OF_ELEMENT = 0;
+}
+
+message OneOfMessageFirst {
+  OneOfEnum enumValue = 1;
+}
+
+message OneOfMessageSecond {
+  double doubleValue = 1;
+}
+
+message TestOneOf {
+  oneof simple_oneOf {
+      string stringOneOf = 1;
+      OneOfMessageFirst firstMessage = 2;
+      OneOfMessageSecond secondMessage = 3;
+  }
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.optional";
+
+package test.optional;
+
+message OptionalObject {
+  bool test = 1;
+}
+
+message TestOptional {
+  optional OptionalObject optionalObject = 1;
+  optional string str = 2;
+}

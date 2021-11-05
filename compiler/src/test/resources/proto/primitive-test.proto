@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.primitives";
+
+package test.primitives;
+
+message TestPrimitive {
+  string stringValue = 1;
+  double doubleValue = 2;
+  bool booleanValue = 3;
+  fixed32 fixed32Value = 4;
+  fixed64 fixed64Value = 5;
+  float floatValue = 6;
+  int32 int32Value = 7;
+  int64 int64Value = 8;
+  sfixed32 sFixed32Value = 9;
+  sfixed64 sFixed64Value = 10;
+  sint32 sInt32Value = 11;
+  sint64 sInt64Value = 12;
+  uint32 uInt32Value = 13;
+  uint64 uInt64Value = 14;
+}
