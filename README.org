@@ -1,0 +1,570 @@
+#+TITLE: Kotlin DTO Generator for gRPC
+
+The protobuf plugin generates DTO classes for the corresponding messages in your *.proto files.
+
+The data classes in Kotlin is more convenient then the builders.
+
+The generator makes the next steps:
+1. Create a new DTO class with a simple name <message_class_name>*Dto* inside a package <java_package>*.dto*. Both suffixes for class and package are customizable.
+2. Create to additional extension functions inside each file: *toDto* and *toGrpc*
+
+The generator creates new Dto class with simple name <message_class_name>*Dto*. The prefix is customizable.
+The generator creates two additional extensions functions *toDto* and *toGrpc*
+
+Some code taken from - https://github.com/grpc/grpc-kotlin. Remove as soon as possible.
+
+* How to use
+
+```
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${rootProject.ext["protobufVersion"]}"
+    }
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:${rootProject.ext["grpcVersion"]}"
+        }
+        id("grpcdtokt") {
+            artifact = "INPROGRESS"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            if (it.name.startsWith("generateTestProto")) {
+                it.dependsOn("jar")
+            }
+
+            it.plugins {
+                id("grpc")
+                id("grpcdtokt") {
+                    option("dto_suffix=Dto")
+                    option("dto_package_suffix=dto")
+                }
+            }
+        }
+    }
+}
+```
+
+* Options
+
+Current implementation has the next options:
+1. *dto_suffix* - DTO class suffix. Default - *Dto* (example: *dto_suffix=DTO*)
+2. *dto_package_suffix* - DTO class package suffix. New package suffix adds to default package for proto objects. Default - *dto* (example: *dto_package_suffix=test.example*)
+
+
+* Examples
+** Primitives
+
+All primitives has a default value.
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.primitives";
+
+package test.primitives;
+
+message TestPrimitive {
+  string stringValue = 1;
+  double doubleValue = 2;
+  bool booleanValue = 3;
+  fixed32 fixed32Value = 4;
+  fixed64 fixed64Value = 5;
+  float floatValue = 6;
+  int32 int32Value = 7;
+  int64 int64Value = 8;
+  sfixed32 sFixed32Value = 9;
+  sfixed64 sFixed64Value = 10;
+  sint32 sInt32Value = 11;
+  sint64 sInt64Value = 12;
+  uint32 uInt32Value = 13;
+  uint64 uInt64Value = 14;
+}
+#+END_SRC
+
+#+BEGIN_SRC kotlin
+package org.avlasov.test.primitives.dto
+
+import kotlin.Boolean
+import kotlin.Double
+import kotlin.Float
+import kotlin.Int
+import kotlin.Long
+import kotlin.String
+import org.avlasov.test.primitives.TestPrimitive
+
+data class TestPrimitiveDto(
+    val stringValue: String = "",
+    val doubleValue: Double = 0.0,
+    val booleanValue: Boolean = false,
+    val fixed32Value: Int = 0,
+    val fixed64Value: Long = 0,
+    val floatValue: Float = 0F,
+    val int32Value: Int = 0,
+    val int64Value: Long = 0,
+    val sFixed32Value: Int = 0,
+    val sFixed64Value: Long = 0,
+    val sInt32Value: Int = 0,
+    val sInt64Value: Long = 0,
+    val uInt32Value: Int = 0,
+    val uInt64Value: Long = 0
+)
+
+fun TestPrimitive.toDto(): TestPrimitiveDto =
+	TestPrimitiveDto(
+		stringValue = stringValue,
+		doubleValue = doubleValue,
+		booleanValue = booleanValue,
+		fixed32Value = fixed32Value,
+		fixed64Value = fixed64Value,
+		floatValue = floatValue,
+		int32Value = int32Value,
+		int64Value = int64Value,
+		sFixed32Value = sFixed32Value,
+		sFixed64Value = sFixed64Value,
+		sInt32Value = sInt32Value,
+		sInt64Value = sInt64Value,
+		uInt32Value = uInt32Value,
+		uInt64Value = uInt64Value
+	)
+
+fun TestPrimitiveDto.toGrpc(): TestPrimitive =
+	TestPrimitive.newBuilder().also {
+    	it.stringValue = stringValue
+    	it.doubleValue = doubleValue
+    	it.booleanValue = booleanValue
+    	it.fixed32Value = fixed32Value
+    	it.fixed64Value = fixed64Value
+    	it.floatValue = floatValue
+    	it.int32Value = int32Value
+    	it.int64Value = int64Value
+    	it.sFixed32Value = sFixed32Value
+    	it.sFixed64Value = sFixed64Value
+    	it.sInt32Value = sInt32Value
+    	it.sInt64Value = sInt64Value
+    	it.uInt32Value = uInt32Value
+    	it.uInt64Value = uInt64Value
+    }
+    .build()
+#+END_SRC
+** Enum
+DTO enum class won't have *UNRECOGNISED* value.
+Default value for a enum class as a field is *null*
+
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.enums";
+
+package test.enums;
+
+enum TestEnum {
+  FIRST = 0;
+  SECOND = 1;
+  THIRD = 2;
+}
+#+END_SRC
+
+#+BEGIN_SRC kotlin
+package org.avlasov.test.enums.dto
+
+import org.avlasov.test.enums.TestEnum
+
+enum class TestEnumDto {
+    FIRST,
+
+    SECOND,
+
+    THIRD
+}
+
+fun TestEnum.toDto(): TestEnumDto = TestEnumDto.valueOf(name)
+
+fun TestEnumDto.toGrpc(): TestEnum = TestEnum.valueOf(name)
+#+END_SRC
+
+*** Message filed example
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.oneof";
+
+package test.oneof;
+
+enum OneOfEnum {
+  ONE_OF_ELEMENT = 0;
+}
+
+message OneOfMessageFirst {
+  OneOfEnum enumValue = 1;
+}
+#+END_SRC
+
+#+BEGIN_SRC kotlin
+package org.avlasov.test.oneof.dto
+
+import org.avlasov.test.oneof.OneOfMessageFirst
+
+data class OneOfMessageFirstDto(
+    val enumValue: OneOfEnumDto? = null
+)
+
+fun OneOfMessageFirst.toDto(): OneOfMessageFirstDto =
+	OneOfMessageFirstDto(
+		enumValue = enumValue.toDto()
+	)
+
+fun OneOfMessageFirstDto.toGrpc(): OneOfMessageFirst =
+	OneOfMessageFirst.newBuilder().also {
+        if (enumValue != null) {
+            it.enumValue = enumValue.toGrpc()
+        }
+    }
+    .build()
+#+END_SRC
+** One Of
+By default all objects under *oneOf* tag is nullable types. You can set only one object.
+The generator set value if and only if Protobuf message has the value and if DTO value is not null.
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.oneof";
+
+package test.oneof;
+
+enum OneOfEnum {
+  ONE_OF_ELEMENT = 0;
+}
+
+message OneOfMessageFirst {
+  OneOfEnum enumValue = 1;
+}
+
+message OneOfMessageSecond {
+  double doubleValue = 1;
+}
+
+message TestOneOf {
+  oneof simple_oneOf {
+      string stringOneOf = 1;
+      OneOfMessageFirst firstMessage = 2;
+      OneOfMessageSecond secondMessage = 3;
+  }
+}
+#+END_SRC
+
+#+NAME: OneOfEnum
+#+BEGIN_SRC kotlin
+package org.avlasov.test.oneof.dto
+
+import org.avlasov.test.oneof.OneOfEnum
+
+enum class OneOfEnumDto {
+    ONE_OF_ELEMENT
+}
+
+fun OneOfEnum.toDto(): OneOfEnumDto = OneOfEnumDto.valueOf(name)
+
+fun OneOfEnumDto.toGrpc(): OneOfEnum = OneOfEnum.valueOf(name)
+#+END_SRC
+
+#+NAME: OneOfMessageFirst
+#+BEGIN_SRC kotlin
+package org.avlasov.test.oneof.dto
+
+import org.avlasov.test.oneof.OneOfMessageFirst
+
+data class OneOfMessageFirstDto(
+    val enumValue: OneOfEnumDto? = null
+)
+
+fun OneOfMessageFirst.toDto(): OneOfMessageFirstDto =
+	OneOfMessageFirstDto(
+		enumValue = enumValue.toDto()
+	)
+
+fun OneOfMessageFirstDto.toGrpc(): OneOfMessageFirst =
+	OneOfMessageFirst.newBuilder().also {
+        if (enumValue != null) {
+            it.enumValue = enumValue.toGrpc()
+        }
+    }
+    .build()
+#+END_SRC
+
+#+NAME: OneOfMessageSecond
+#+BEGIN_SRC kotlin
+package org.avlasov.test.oneof.dto
+
+import kotlin.Double
+import org.avlasov.test.oneof.OneOfMessageSecond
+
+data class OneOfMessageSecondDto(
+    val doubleValue: Double = 0.0
+)
+
+fun OneOfMessageSecond.toDto(): OneOfMessageSecondDto =
+	OneOfMessageSecondDto(
+		doubleValue = doubleValue
+	)
+
+fun OneOfMessageSecondDto.toGrpc(): OneOfMessageSecond =
+	OneOfMessageSecond.newBuilder().also {
+    	it.doubleValue = doubleValue
+    }
+    .build()
+#+END_SRC
+
+#+NAME: TestOneOf
+#+BEGIN_SRC kotlin
+package org.avlasov.test.oneof.dto
+
+import kotlin.String
+import org.avlasov.test.oneof.TestOneOf
+
+data class TestOneOfDto(
+    val stringOneOf: String? = null,
+    val firstMessage: OneOfMessageFirstDto? = null,
+    val secondMessage: OneOfMessageSecondDto? = null
+)
+
+fun TestOneOf.toDto(): TestOneOfDto =
+	TestOneOfDto(
+		stringOneOf = if (hasStringOneOf()) stringOneOf else null,
+		firstMessage = if (hasFirstMessage()) firstMessage.toDto() else null,
+		secondMessage = if (hasSecondMessage()) secondMessage.toDto() else null
+	)
+
+fun TestOneOfDto.toGrpc(): TestOneOf =
+	TestOneOf.newBuilder().also {
+        if (stringOneOf != null) {
+            it.stringOneOf = stringOneOf
+        }
+        if (firstMessage != null) {
+            it.firstMessage = firstMessage.toGrpc()
+        }
+        if (secondMessage != null) {
+            it.secondMessage = secondMessage.toGrpc()
+        }
+    }
+    .build()
+#+END_SRC
+
+** Optional
+
+Any field marked as optional is nullable by default.
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.optional";
+
+package test.optional;
+
+message OptionalObject {
+  bool test = 1;
+}
+
+message TestOptional {
+  optional OptionalObject optionalObject = 1;
+  optional string str = 2;
+}
+#+END_SRC
+
+#+NAME: OptionalObject
+#+BEGIN_SRC kotlin
+package org.avlasov.test.optional.dto
+
+import kotlin.Boolean
+import org.avlasov.test.optional.OptionalObject
+
+data class OptionalObjectDto(
+    val test: Boolean = false
+)
+
+fun OptionalObject.toDto(): OptionalObjectDto =
+	OptionalObjectDto(
+		test = test
+	)
+
+fun OptionalObjectDto.toGrpc(): OptionalObject =
+	OptionalObject.newBuilder().also {
+    	it.test = test
+    }
+    .build()
+#+END_SRC
+
+#+NAME: TestOptional
+#+BEGIN_SRC kotlin
+package org.avlasov.test.optional.dto
+
+import kotlin.String
+import org.avlasov.test.optional.TestOptional
+
+data class TestOptionalDto(
+    val optionalObject: OptionalObjectDto? = null,
+    val str: String? = null
+)
+
+fun TestOptional.toDto(): TestOptionalDto =
+	TestOptionalDto(
+		optionalObject = if (hasOptionalObject()) optionalObject.toDto() else null,
+		str = if (hasStr()) str else null
+	)
+
+fun TestOptionalDto.toGrpc(): TestOptional =
+	TestOptional.newBuilder().also {
+        if (optionalObject != null) {
+            it.optionalObject = optionalObject.toGrpc()
+        }
+        if (str != null) {
+            it.str = str
+        }
+    }
+    .build()
+#+END_SRC
+
+** Repeated
+
+By default all fields marked as repeated has default value *listOf()*. The content of the repeated list converts from gRPC -> DTO and vice versa.
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.oneof";
+
+package test.oneof;
+
+enum OneOfEnum {
+  ONE_OF_ELEMENT = 0;
+}
+
+message OneOfMessageFirst {
+  OneOfEnum enumValue = 1;
+}
+
+message OneOfMessageSecond {
+  double doubleValue = 1;
+}
+
+message TestOneOf {
+  oneof simple_oneOf {
+      string stringOneOf = 1;
+      OneOfMessageFirst firstMessage = 2;
+      OneOfMessageSecond secondMessage = 3;
+  }
+}
+#+END_SRC
+
+#+NAME: RepeatedObject
+#+BEGIN_SRC kotlin
+package org.avlasov.test.repeated.dto
+
+import kotlin.Boolean
+import org.avlasov.test.repeated.RepeatedObject
+
+data class RepeatedObjectDto(
+    val test: Boolean = false
+)
+
+fun RepeatedObject.toDto(): RepeatedObjectDto =
+	RepeatedObjectDto(
+		test = test
+	)
+
+fun RepeatedObjectDto.toGrpc(): RepeatedObject =
+	RepeatedObject.newBuilder().also {
+    	it.test = test
+    }
+    .build()
+#+END_SRC
+
+#+NAME: TestRepeated
+#+BEGIN_SRC kotlin
+package org.avlasov.test.repeated.dto
+
+import kotlin.Int
+import kotlin.String
+import kotlin.collections.List
+import org.avlasov.test.repeated.TestRepeated
+
+data class TestRepeatedDto(
+    val objects: List<RepeatedObjectDto> = listOf(),
+    val strings: List<String> = listOf(),
+    val ints: List<Int> = listOf()
+)
+
+fun TestRepeated.toDto(): TestRepeatedDto =
+	TestRepeatedDto(
+		objects = objectsList.map { it.toDto() },
+		strings = stringsList,
+		ints = intsList
+	)
+
+fun TestRepeatedDto.toGrpc(): TestRepeated =
+	TestRepeated.newBuilder().also {
+    	it.addAllObjects(objects.map { o -> o.toGrpc() })
+    	it.addAllStrings(strings)
+    	it.addAllInts(ints)
+    }
+    .build()
+#+END_SRC
+
+** Special scenarios
+One of the special scenarios is the message that not generates as DTO. For example: type - *google.protobuf.Any*
+
+*NOTE* At this moment the feature is not fully covered. Please, fill free to contribute or create an issue.
+
+#+BEGIN_SRC protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.avlasov.test.special";
+
+import "google/protobuf/any.proto";
+
+package test.special;
+
+message TestSpecial {
+  string message = 1;
+  repeated google.protobuf.Any details = 2;
+}
+#+END_SRC
+
+#+NAME: TestSpecial
+#+BEGIN_SRC kotlin
+package org.avlasov.test.special.dto
+
+import com.google.protobuf.Any
+import kotlin.String
+import kotlin.collections.List
+import org.avlasov.test.special.TestSpecial
+
+data class TestSpecialDto(
+    val message: String = "",
+    val details: List<Any> = listOf()
+)
+
+fun TestSpecial.toDto(): TestSpecialDto =
+	TestSpecialDto(
+		message = message,
+		details = detailsList
+	)
+
+fun TestSpecialDto.toGrpc(): TestSpecial =
+	TestSpecial.newBuilder().also {
+    	it.message = message
+    	it.addAllDetails(details)
+    }
+    .build()
+#+END_SRC
